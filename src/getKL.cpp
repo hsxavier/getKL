@@ -28,148 +28,63 @@ int main() {
   std::complex<double> z;
   int Nentries;
   
-  lmax = 3;
+  lmax = 1;
   noise.Alloc(lmax);
   Nentries = noise.Nentries();
 
-  /*
-  for (i=0; i<Nentries; i++)
-    for(j=0; j<Nentries; j++) {
-      z.real((double)i); z.imag((double)j);
-      noise.set(i,j,z);
-    }
-  */
 
-  for (L=0; L<=lmax; L++) for(M=-L; M<=L; M++) {
-      for (l=0; l<=lmax; l++) for(m=-l; m<=l; m++) {
-	  z.real((double)(L*(L+1)+M)); z.imag((double)(l*(l+1)+m));
-	  noise.set(0,L,M,0,l,m,z);
-	}
-    }
+  z.real(1); z.imag(0); noise.set(0,0,z);
+  z.real(2); z.imag(3); noise.set(0,1,z);
+  z.real(4); z.imag(5); noise.set(0,2,z);
+  z.real(6); z.imag(7); noise.set(0,3,z);
 
+  z.real(2); z.imag(-3); noise.set(1,0,z);
+  z.real(8); z.imag(0); noise.set(1,1,z);
+  z.real(1); z.imag(2); noise.set(1,2,z);
+  z.real(3); z.imag(4); noise.set(1,3,z);
+
+  z.real(4); z.imag(-5); noise.set(2,0,z);
+  z.real(1); z.imag(-2); noise.set(2,1,z);
+  z.real(9); z.imag(0); noise.set(2,2,z);
+  z.real(7); z.imag(0); noise.set(2,3,z);
+  
+  z.real(6); z.imag(-7); noise.set(3,0,z);
+  z.real(3); z.imag(-4); noise.set(3,1,z);
+  z.real(7); z.imag(0); noise.set(3,2,z);
+  z.real(10); z.imag(0); noise.set(3,3,z);
+  
   for (i=0; i<Nentries; i++) {
-    for(j=0; j<Nentries; j++) {
-      z = noise(i,j);
-      cout << z << " ";
-    }
-    cout<< endl;
-  }
-  
-  /*
-  for (L=0; L<=lmax; L++) for(M=-L; M<=L; M++) {
-      for (l=0; l<=lmax; l++) for(m=-l; m<=l; m++) {
-	  z = noise(0,L,M,0,l,m);
-	  cout << z << " ";
-	}
-      cout << endl;
-    }
-  */
-  return 0;
-
-  /*gsl_matrix_complex *gmat, *evec;
-  gsl_eigen_hermv_workspace *gslw;
-  gsl_complex z;
-  gsl_vector *eval;
-  k=4;
-  gmat = gsl_matrix_complex_alloc(k, k); 
-  evec = gsl_matrix_complex_alloc(k, k); 
-  gslw = gsl_eigen_hermv_alloc(k);
-  eval = gsl_vector_alloc(k);
-
-  /*
-  GSL_SET_COMPLEX(&z, 0, 0); 
-  gsl_matrix_complex_set(gmat, 0, 0, z);
-  GSL_SET_COMPLEX(&z, 0, -1); 
-  gsl_matrix_complex_set(gmat, 0, 1, z);
-  GSL_SET_COMPLEX(&z, 0, 1); 
-  gsl_matrix_complex_set(gmat, 1, 0, z);
-  GSL_SET_COMPLEX(&z, 0, 0); 
-  gsl_matrix_complex_set(gmat, 1, 1, z);
-
-  GSL_SET_COMPLEX(&z, 0, 0); 
-  gsl_matrix_complex_set(gmat, 0, 0, z);
-  GSL_SET_COMPLEX(&z, 1, 0); 
-  gsl_matrix_complex_set(gmat, 0, 1, z);
-  GSL_SET_COMPLEX(&z, 1, 0); 
-  gsl_matrix_complex_set(gmat, 1, 0, z);
-  GSL_SET_COMPLEX(&z, 0, 0); 
-  gsl_matrix_complex_set(gmat, 1, 1, z);
-  
-  
-  GSL_SET_COMPLEX(&z, 1, 0); 
-  gsl_matrix_complex_set(gmat, 0, 0, z);
-  GSL_SET_COMPLEX(&z, 2, 3); 
-  gsl_matrix_complex_set(gmat, 0, 1, z);
-  GSL_SET_COMPLEX(&z, 4, 5); 
-  gsl_matrix_complex_set(gmat, 0, 2, z);
-  GSL_SET_COMPLEX(&z, 6, 7); 
-  gsl_matrix_complex_set(gmat, 0, 3, z);
-
-  GSL_SET_COMPLEX(&z, 2, -3); 
-  gsl_matrix_complex_set(gmat, 1, 0, z);
-  GSL_SET_COMPLEX(&z, 8, 0);
-  gsl_matrix_complex_set(gmat, 1, 1, z);
-  GSL_SET_COMPLEX(&z, 1, 2); 
-  gsl_matrix_complex_set(gmat, 1, 2, z);
-  GSL_SET_COMPLEX(&z, 3, 4); 
-  gsl_matrix_complex_set(gmat, 1, 3, z);
-
-  GSL_SET_COMPLEX(&z, 4, -5); 
-  gsl_matrix_complex_set(gmat, 2, 0, z);
-  GSL_SET_COMPLEX(&z, 1, -2); 
-  gsl_matrix_complex_set(gmat, 2, 1, z);
-  GSL_SET_COMPLEX(&z, 9, 0); 
-  gsl_matrix_complex_set(gmat, 2, 2, z);
-  GSL_SET_COMPLEX(&z, 7, 0); 
-  gsl_matrix_complex_set(gmat, 2, 3, z);
-
-  GSL_SET_COMPLEX(&z, 6, -7); 
-  gsl_matrix_complex_set(gmat, 3, 0, z);
-  GSL_SET_COMPLEX(&z, 3, -4); 
-  gsl_matrix_complex_set(gmat, 3, 1, z);
-  GSL_SET_COMPLEX(&z, 7, 0); 
-  gsl_matrix_complex_set(gmat, 3, 2, z);
-  GSL_SET_COMPLEX(&z, 10, 0); 
-  gsl_matrix_complex_set(gmat, 3, 3, z);
-  
-
-  
-  for (i=0; i<k; i++) {
-    for (j=0; j<k; j++) {
-      z = gsl_matrix_complex_get(gmat, i, j);
-      printf ("%g + %gi   ",GSL_REAL(z), GSL_IMAG(z));
+    for (j=0; j<Nentries; j++) {
+      cout << noise(i,j) << " ";
     }
     cout<<endl;
   }
   cout<<endl;
 
-  gsl_eigen_hermv(gmat, eval, evec, gslw);
+  Announce("Solving eigensystem...");
+  noise.EigenSolve();
+  Announce();
 
-  for (i=0; i<k; i++) printf ("%g  ",gsl_vector_get(eval,i));
-  printf("\n");
-  cout<<endl;
+  std::vector<double> Eigenvalues;
+  std::vector< std::vector< std::complex<double> > > Eigenvectors;
+  
+  Eigenvalues.resize(Nentries);
+  Eigenvectors.resize(Nentries);
+  for(i=0; i<Nentries; i++) Eigenvectors[i].resize(Nentries);
 
-  for (i=0; i<k; i++) {
-    for (j=0; j<k; j++) {
-      z = gsl_matrix_complex_get(evec, j, i);
-      printf ("%g ",GSL_REAL(z));
-    }
+  noise.Eigenvalues2(Eigenvalues);
+  noise.Eigenvectors2(Eigenvectors);
+  
+  cout << endl << "Eigenvalues:\n";
+  for (i=0;i<Nentries; i++) cout << Eigenvalues[i] << " ";
+  cout << endl;
+  cout << endl << "Eigenvectors:\n";
+  for (i=0; i<Nentries; i++) {
+    for (j=0; j<Nentries; j++) cout << Eigenvectors[i][j] << " ";
     cout<<endl;
   }
-  cout<<endl;
-
-  for (i=0; i<k; i++) {
-    for (j=0; j<k; j++) {
-      z = gsl_matrix_complex_get(evec, j, i);
-      printf ("%g ",GSL_IMAG(z));
-    }
-    cout<<endl;
-  }
-  cout<<endl;
-
   
   return 0;
-  */
 
   // Read in noise map:
   Announce("Loading noise map...");
