@@ -78,9 +78,9 @@ $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Ut
 
 $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC)/fitsfunctions.hpp \
 		$(SRC)/CovMatrix.hpp
-	$(COMP) -c $(CXXHEAL) $(SRC)/getKL.cpp -o $@
+	$(COMP) -c $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
-$(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp
+$(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp
 	$(COMP) -c $(SRC)/getKL_aux.cpp -o $@
 
 $(OBJ)/CovMatrix.o: $(SRC)/CovMatrix.cpp

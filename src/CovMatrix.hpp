@@ -14,8 +14,6 @@ private:
   gsl_vector *gslEigenvalues;
   int Lmax;
   int Nent;
-  int  wlm2i(int  w, int  l, int  m) const;
-  void i2wlm(int i, int *w, int *l, int *m) const;
 public:
   CovMatrix();
   // Set sizes and allocate memory:
@@ -36,6 +34,10 @@ public:
   void Eigenvectors2(std::vector< std::vector< std::complex<double> > > & external) const;
   // Deallocate memory:
   void ClearAll();
+  // Translate sub-indices (w,l,m) into a single covariance matrix index i:
+  int  wlm2i(int  w, int  l, int  m) const;
+  void i2wlm(int i, int *w, int *l, int *m) const;
+
 };
   
 #endif
