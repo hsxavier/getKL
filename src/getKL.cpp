@@ -13,9 +13,6 @@
 #define MAP_PRECISION double
 #define ALM_PRECISION double
 
-//#include <gsl/gsl_matrix_complex_double.h>
-//#include <gsl/gsl_eigen.h>
-
 int main() {
   using std::cout;
   using std::endl;
@@ -23,10 +20,13 @@ int main() {
   Healpix_Map<MAP_PRECISION> NoiseMap;
   Alm<xcomplex <ALM_PRECISION> > Nlm;
   CovMatrix noise;
-  int Nside, Scheme, lmax=2, CovN, i, j, k, l, m, L, M, ll, mm;
+  int Nside, Scheme, lmax=50, CovN, i, j, k, l, m, L, M, ll, mm;
   std::complex<double> z, z2;
   long long1, long2;
 
+  cout << "LMAX: " << lmax << endl;
+  
+  
   // Read in noise map:
   Announce("Loading noise map...");
   str1.assign("../data/boss_survey_Ns128.fits");
@@ -41,7 +41,7 @@ int main() {
   PrepRingWeights(1, RingWeights, Nside);
   Announce("Get harmonic coefficients from noise map...");
   Nlm.Set(2*lmax,2*lmax);
-  for(l=0; l<=lmax; l++) for (m=0; m<=l; m++) { Nlm(l,m).real(0); Nlm(l,m).imag(0); }
+  for(l=0; l<=2*lmax; l++) for (m=0; m<=l; m++) { Nlm(l,m).real(0); Nlm(l,m).imag(0); }
   map2alm(NoiseMap, Nlm, RingWeights);
   Announce();
   
@@ -50,14 +50,15 @@ int main() {
   noise.Alloc(lmax);
   CovN = noise.Nentries();
   Announce();
-  
-  Announce("Computing covariance matrix...");
-  long2=((long)CovN)*((long)CovN);
+  cout << "Cov. matrix side is N="<<CovN<<endl;
+
+  Announce("Computing diag. and lower triangular of cov. matrix...");
+  long2=(((long)CovN+1)*((long)CovN))/2;
   // LOOP over Cov. Matrix elements:
 #pragma omp parallel for schedule(dynamic) private(i,j,k,L,M,l,m,z,ll,z2)
   for (long1=0; long1<long2; long1++) {
-    i=(int)(long1/((long)CovN));
-    j=(int)(long1%((long)CovN));
+    i = (int)((sqrt(8*long1+1)-1.0)/2.0);
+    j = (int)(long1-(i*(i+1))/2);
     noise.i2wlm(i,&k,&L,&M);
     noise.i2wlm(j,&k,&l,&m);
     // Compute the element given by a sum over Nlm:
@@ -71,19 +72,22 @@ int main() {
     noise.set(i,j,z);
   }
   Announce();
-  
-  
+
+  /*
+  // Print matrix to screen:
   for (i=0; i<CovN; i++) {
-    for (j=0; j<CovN; j++) {
-      cout << noise(i,j).imag() << " ";
-    }
+    for (j=0; j<CovN; j++) cout << noise(i,j) << " ";
     cout << endl;
   }
+  */
 
+  // Find eigenvalues and eigenvectors:
   Announce("Solving eigensystem...");
   noise.EigenSolve();
   Announce();
 
+  // Copy to external data:
+  Announce("Copying solution to external data...");
   std::vector<double> Eigenvalues;
   std::vector< std::vector< std::complex<double> > > Eigenvectors;
   
@@ -93,7 +97,11 @@ int main() {
 
   noise.Eigenvalues2(Eigenvalues);
   noise.Eigenvectors2(Eigenvectors);
+  Announce();
   
+  return 0;
+
+  // Print solution to the screen:
   cout << endl << "Eigenvalues:\n";
   for (i=0;i<CovN; i++) cout << Eigenvalues[i] << " ";
   cout << endl;

@@ -13,10 +13,6 @@ double MinusOneToPower(int m) {
 double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
   const double FourPi = 12.56637061435917;
   int twol1, twol2, twol3;
-  if ( m1+m2-m3    != 0) return 0.0;
-  if ((l1+l2+l3)%2 == 1) return 0.0;
-  if (l3 < fabs(l1-l2) ) return 0.0;
-  if (l3 > l1+l2       ) return 0.0;
   twol1 = 2*l1;
   twol2 = 2*l2;
   twol3 = 2*l3;
