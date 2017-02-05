@@ -153,3 +153,61 @@ void CovMatrix::EigenSolve() {
   eigenQ     = 1;
 }
 
+
+
+/********************************/
+/*** Functions to output data ***/
+/********************************/
+
+
+// Print data to file:
+void CovMatrix::Print(std::string fileprefix, DataOut data) {
+  using std::endl;
+  std::ofstream outfile1, outfile2; 
+  gsl_matrix_complex *gslMat;
+  int i, j;
+
+  // Real vector case:
+  if (data==EvalOut) {
+    // Check if can open file for output:
+    outfile1.open(fileprefix.c_str());
+    if (!outfile1.is_open()) warning("CovMatrix::Print: cannot open file "+fileprefix);
+    else {
+      // Write eigenvalues to file:
+      if (!eigenQ) warning("CovMatrix::Print: Eigenvalues not computed.");
+      for (i=0; i<Nent; i++) outfile1 << gsl_vector_get(gslEigenvalues, i) << endl; 
+      outfile1.close();
+    }
+  }
+
+  // Complex matrix case:
+  if (data==EvecOut || data==CovOut) {
+    // Check if can open file for output:
+    outfile1.open((fileprefix+"-re").c_str());
+    if (!outfile1.is_open()) warning("CovMatrix::Print: cannot open file "+fileprefix+"-re");
+    outfile2.open((fileprefix+"-im").c_str());
+    if (!outfile2.is_open()) warning("CovMatrix::Print: cannot open file "+fileprefix+"-im");
+    else {
+      // Set output for Eigenvectors or Covariance matrix:
+      if (data==EvecOut) {
+	gslMat=gslEigenvectors;
+	if (!eigenQ) warning("CovMatrix::Print: Eigenvectors not computed.");
+      }
+      else if (data==CovOut) {
+	gslMat=gslCovMatrix;
+	if (destroyedQ) warning("CovMatrix::Print: Covariance matrix was destroyed.");
+      }
+      // Write matrix to files (real and imag parts in different files):
+      for (i=0; i<Nent; i++) {
+	for (j=0; j<Nent; j++) {
+	  outfile1 << GSL_REAL(gsl_matrix_complex_get(gslMat, j, i)) << " ";
+	  outfile2 << GSL_IMAG(gsl_matrix_complex_get(gslMat, j, i)) << " ";
+	}
+	outfile1 << endl;
+	outfile2 << endl;
+      }
+      outfile1.close();
+      outfile2.close();
+    }
+  }
+}

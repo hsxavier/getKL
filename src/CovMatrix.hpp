@@ -6,6 +6,10 @@
 #include <complex>
 #include <vector>
 
+// Indicators for what data to output in Print function:
+enum DataOut {CovOut, EvalOut, EvecOut};
+
+// Class declaration:
 class CovMatrix {
 private:
   bool allocQ, destroyedQ, eigenQ;
@@ -37,7 +41,8 @@ public:
   // Translate sub-indices (w,l,m) into a single covariance matrix index i:
   int  wlm2i(int  w, int  l, int  m) const;
   void i2wlm(int i, int *w, int *l, int *m) const;
-
+  // Print data to file:
+  void Print(std::string fileprefix, DataOut data);
 };
   
 #endif

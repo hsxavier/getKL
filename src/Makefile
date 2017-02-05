@@ -70,15 +70,16 @@ clean:
 
 # Executables:
 
-$(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o $(OBJ)/CovMatrix.o
+$(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o \
+		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o
 	$(COMP) $(LDHEAL) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
-			$(OBJ)/Utilities.o -o $@ $(GSLLIBS) $(HEALLIBS)
+			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o -o $@ $(GSLLIBS) $(HEALLIBS)
 
 # Objects:
 
 $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC)/fitsfunctions.hpp \
 		$(SRC)/CovMatrix.hpp
-	$(COMP) -c $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
+	$(COMP) -c $(VCONTROL) $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
 $(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp
 	$(COMP) -c $(SRC)/getKL_aux.cpp -o $@
@@ -91,3 +92,6 @@ $(OBJ)/Utilities.o: $(SRC)/Utilities.cpp
 
 $(OBJ)/fitsfunctions.o: $(SRC)/fitsfunctions.cpp $(SRC)/Utilities.hpp
 	$(COMP) $(CXXHEAL) $(SETHEALDATA) $(CXXFITS) -c $(SRC)/fitsfunctions.cpp -o $@
+
+$(OBJ)/ParameterList.o: $(SRC)/ParameterList.cpp $(SRC)/ParameterList.hpp $(SRC)/Utilities.hpp
+	$(COMP) -c $(SRC)/ParameterList.cpp -o $@
