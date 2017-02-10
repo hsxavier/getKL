@@ -111,13 +111,13 @@ void free_tensor3(type ***t, long n1i, long n1f, long n2i, long n2f, long n3i, l
 
 
 // Import table (matrix[1..nr][1..nc]) from file:
-template <typename type>
-type **LoadTable(std::string filename, long *nr, long *nc, int offset=0, int verbose=0) {
+template <typename type, typename intT>
+type **LoadTable(std::string filename, intT *nr, intT *nc, int offset=0, int verbose=0) {
   using std::ifstream;
   using std::string;
   using std::istringstream;
   using std::ostringstream;
-  long nrows=0, ncols=0, i, j, nheaders=0;
+  intT nrows=0, ncols=0, i, j, nheaders=0;
   ifstream file;
   istringstream inputline; ostringstream outputline;
   string word, phrase;
@@ -159,13 +159,13 @@ type **LoadTable(std::string filename, long *nr, long *nc, int offset=0, int ver
 
 // Import column vectors (table[1..nc] must be allocated already) from file:
 // Since the memory is allocated here, the pointer table is set here too!
-template <typename type>
-void LoadVecs(type **table, std::string filename, long *nr, long *nc, int offset=0, int verbose=0) {
+template <typename type, typename intT>
+void LoadVecs(type **table, std::string filename, intT *nr, intT *nc, int offset=0, int verbose=0) {
   using std::ifstream;
   using std::string;
   using std::istringstream;
   using std::ostringstream;
-  long nrows=0, ncols=0, i, j, nheaders=0;
+  intT nrows=0, ncols=0, i, j, nheaders=0;
   ifstream file;
   istringstream inputline; ostringstream outputline;
   string word, phrase;
@@ -205,11 +205,11 @@ void LoadVecs(type **table, std::string filename, long *nr, long *nc, int offset
 
 
 // Import list (vector[1..nitems]) from file:
-template <typename type>
-type *LoadList(std::string filename, long *nitems, int offset=0) {
+template <typename type, typename intT>
+type *LoadList(std::string filename, intT *nitems, int offset=0) {
   using std::ifstream;
   using std::string;
-  long n=0, i;
+  intT n=0, i;
   ifstream file;
   string item;
   type *list;
@@ -236,9 +236,9 @@ type *LoadList(std::string filename, long *nitems, int offset=0) {
 }
 
 // Print table:
-template <typename type>
-void PrintTable(type **table, long nrows, long ncols, std::ostream *output = &std::cout, int offset=0) {
-  long i, j;
+template <typename type, typename intT>
+void PrintTable(type **table, intT nrows, intT ncols, std::ostream *output = &std::cout, int offset=0) {
+  intT i, j;
   
   //(*output).setf(std::ios_base::showpoint);
   (*output).precision(6);
@@ -252,9 +252,9 @@ void PrintTable(type **table, long nrows, long ncols, std::ostream *output = &st
 
 
 // Print table:
-template <typename type>
-void PrintVecs(type **table, long nrows, long ncols, std::ostream *output = &std::cout, int offset=0) {
-  long i, j;
+template <typename type, typename intT>
+void PrintVecs(type **table, intT nrows, intT ncols, std::ostream *output = &std::cout, int offset=0) {
+  intT i, j;
   //(*output).setf(std::ios_base::showpoint);
   (*output).precision(12);
   for (i=offset; i<nrows+offset; i++) {

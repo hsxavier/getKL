@@ -200,8 +200,8 @@ void CovMatrix::Print(std::string fileprefix, DataOut data) {
       // Write matrix to files (real and imag parts in different files):
       for (i=0; i<Nent; i++) {
 	for (j=0; j<Nent; j++) {
-	  outfile1 << GSL_REAL(gsl_matrix_complex_get(gslMat, j, i)) << " ";
-	  outfile2 << GSL_IMAG(gsl_matrix_complex_get(gslMat, j, i)) << " ";
+	  outfile1 << GSL_REAL(gsl_matrix_complex_get(gslMat, i, j)) << " ";
+	  outfile2 << GSL_IMAG(gsl_matrix_complex_get(gslMat, i, j)) << " ";
 	}
 	outfile1 << endl;
 	outfile2 << endl;

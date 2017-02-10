@@ -3,11 +3,13 @@
 #include <stdlib.h>              // For abs for int.
 #include "Utilities.hpp"
 
+
 // Returns (-1)^m:
 double MinusOneToPower(int m) {
   if (m%2==0) return 1.0;
   else return -1.0;
 }
+
 
 // Returns the integral over all sphere of: Y_l1m1 x Y_l2m2 x Y*_l3m3: 
 double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
@@ -20,6 +22,7 @@ double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
     gsl_sf_coupling_3j(twol1, twol2, twol3, 2*m1, 2*m2, -2*m3) *
     gsl_sf_coupling_3j(twol1, twol2, twol3,    0,     0,    0);
 }
+
 
 // Specify the first noise map multipole ll that contributes to the angular covariance matrix:
 int FirstEll(int L, int l, int M, int m) {
@@ -42,3 +45,4 @@ int FirstEll(int L, int l, int M, int m) {
   }
   error("FirstEll: could not find the first ell.");
 }
+

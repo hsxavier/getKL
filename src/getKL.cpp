@@ -19,11 +19,10 @@
 #include "Utilities.hpp"
 #include "CovMatrix.hpp"
 #include "ParameterList.hpp"
-
-#define MAP_PRECISION double
-#define ALM_PRECISION double
-
-
+#include "definitions.h"
+#include "HealpixMapProcess.hpp"
+#include "Cosmology.hpp"
+#include "FFTrelated.hpp"
 
 /*********************************************************************************/
 /***                                 Main code                                 ***/
@@ -35,6 +34,7 @@ int main(int argc, char *argv[]) {
   using std::endl;
   using namespace ParDef; ParameterList config;         // Easy configuration file use.
   // Special variables:
+  Cosmology cosmo;                                      // Cosmological parameters.
   time_t StartAll;                                      // For timing the code run.
   Healpix_Map<MAP_PRECISION> NoiseMap;
   Alm<xcomplex <ALM_PRECISION> > Nlm;
@@ -42,12 +42,13 @@ int main(int argc, char *argv[]) {
   int Nside, Scheme, lmax, CovN;
   // Generic variables and iterators:
   std::string ExitAt, str1;
-  int i, j, k, l, m, L, M, ll, mm;  
+  std::ofstream outfile;
+  int i, j, k, l, m, L, M, ll, mm;
+  double *wrapper[2];
   std::complex<double> z, z2;
   long long1, long2;
 
   StartAll = time(NULL);
-
 
 
   /***************************************/
@@ -68,20 +69,73 @@ int main(int argc, char *argv[]) {
   ExitAt = config.reads("EXIT_AT");
   if (ExitAt!="0") config.findpar(ExitAt+":"); // Produce warning if last output is unknown.
   lmax = config.readi("LMAX");
-  
+  cosmo.load(config);
+
 
   /********************************************************/
   /*** Part 1: Load and process selection function data ***/
   /********************************************************/
   
-  // Read in noise map:
-  Announce("Loading noise map...");
-  read_Healpix_map_from_fits(config.reads("NOISE_MAP"), NoiseMap);
+  // Load redshift distribution and compute average galaxy density:
+  Announce("Loading redshift distribution...");
+  double *rDist, *GalDens;
+  LoadVecs(wrapper, config.reads("Z_DIST"), &k, &i);
+  if (i!=2) warning("gelKL: Expecting two columns, found a different number.");
+  rDist   = wrapper[0];
+  GalDens = wrapper[1];
+  Announce();
+
+  Announce("Computing trafo...");
+  std::vector< std::complex <double> > test;
+  double xmin, xmax;
+  m=32;
+  xmin=1150;
+  xmax=1750;
+  ZZr2Tranform(rDist, GalDens, k, xmin, xmax, m, test);
+  Announce();
+  for (i=0; i<m; i++) {
+    cout << q2w(i-m/2-(m%2-1), IntervalU(xmin,xmax)) << " " << test[i] << endl;
+  }
+  return 0;
+  
+  Announce("Converting to galaxy density in gals/(h^-1 Mpc)^3...");
+  SphDens2CartDens(cosmo, rDist, GalDens, k);
+  Announce();
+  // Output density if requested:
+  if (config.reads("GALDENS_OUT")!="0") {
+    str1 = config.reads("GALDENS_OUT");
+    Announce("Writing GALDENS_OUT to "+str1+"...");
+    outfile.open(str1.c_str());
+    if (!outfile.is_open()) error("getKL: cannot open file "+str1);
+    PrintVecs(wrapper, k, 2, &outfile);
+    outfile.close();
+    Announce();
+  }
+  // Exit if this is the last output requested:
+  if (ExitAt=="GALDENS_OUT") {
+    PrepareEnd(StartAll); return 0;
+  }
+  
+
+  // Read in completeness map and compute density contrast noise map:
+  Announce("Loading completeness map...");
+  read_Healpix_map_from_fits(config.reads("COMPLETE_MAP"), NoiseMap);
   Nside  = NoiseMap.Nside();
   Scheme = NoiseMap.Scheme();
   if (Scheme !=RING) warning("Expecting map in the RING ordering scheme.");
   Announce();
-  cout << "NOISE_MAP has Nside = "<<Nside<<".\n";
+  cout << "COMPLETE_MAP has Nside = "<<Nside<<".\n";
+  Announce("Computing density contrast noise map...");
+  Completeness2NoiseMap(NoiseMap);
+  Announce();
+  // Output noise map if requested:
+  if (config.reads("NOISEMAP_OUT")!="0") {
+    str1 = config.reads("NOISEMAP_OUT");
+    Announce("Writing NOISEMAP_OUT to "+str1);
+    write_Healpix_map_to_fits("!"+str1, NoiseMap, planckType<MAP_PRECISION>());
+    Announce();
+  }
+
 
   // Get harmonic coefficients from noise map:
   arr<double> RingWeights(2*Nside);
@@ -114,8 +168,8 @@ int main(int argc, char *argv[]) {
   for (long1=0; long1<long2; long1++) {
     i = (int)((sqrt(8*long1+1)-1.0)/2.0);
     j = (int)(long1-(i*(i+1))/2);
-    noise.i2wlm(i,&k,&L,&M);
-    noise.i2wlm(j,&k,&l,&m);
+    noise.i2wlm(i,&k,&l,&m);
+    noise.i2wlm(j,&k,&L,&M);
     // Compute the element given by a sum over Nlm:
     z.real(0); z.imag(0);
     for (ll=FirstEll(L,l,M,m); ll<=L+l; ll=ll+2) {

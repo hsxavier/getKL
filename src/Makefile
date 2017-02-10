@@ -23,6 +23,7 @@ LDHEAL   = -L$(HEALDIR)/src/cxx/generic_gcc/lib
 CXXOMP   = -fopenmp
 GSLLIBS  = -lgsl -lgslcblas
 HEALLIBS = -lhealpix_cxx -lcxxsupport -lcfitsio -lsharp -lfftpack -lc_utils -lgomp
+FFTWLIBS = -lfftw3 -lm
 
 # Options for Splinter computer:
 ifeq ($(HOSTNAME), splinter-login.local)
@@ -71,21 +72,41 @@ clean:
 # Executables:
 
 $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o \
-		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o
+		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o
 	$(COMP) $(LDHEAL) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
-			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o -o $@ $(GSLLIBS) $(HEALLIBS)
+			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o -o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS)
+
 
 # Objects:
 
 $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC)/fitsfunctions.hpp \
-		$(SRC)/CovMatrix.hpp
+		$(SRC)/CovMatrix.hpp $(SRC)/definitions.h $(SRC)/HealpixMapProcess.hpp $(SRC)/Cosmology.hpp \
+		$(SRC)/FFTrelated.hpp
 	$(COMP) -c $(VCONTROL) $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
 $(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp
 	$(COMP) -c $(SRC)/getKL_aux.cpp -o $@
 
+$(OBJ)/FFTrelated.o: $(SRC)/FFTrelated.cpp $(SRC)/Utilities.hpp $(SRC)/interpol.h
+	$(COMP) -c $(SRC)/FFTrelated.cpp -o $@
+
 $(OBJ)/CovMatrix.o: $(SRC)/CovMatrix.cpp
 	$(COMP) -c $(SRC)/CovMatrix.cpp -o $@
+
+$(OBJ)/HealpixMapProcess.o: $(SRC)/HealpixMapProcess.cpp $(SRC)/definitions.h
+	$(COMP) $(CXXHEAL) -c $(SRC)/HealpixMapProcess.cpp -o $@
+
+$(OBJ)/Cosmology.o: $(SRC)/Cosmology.cpp $(SRC)/Cosmology.hpp $(SRC)/Utilities.hpp $(SRC)/Integral.hpp \
+	$(SRC)/ParameterList.hpp $(SRC)/interpol.h
+	$(COMP) -c $(SRC)/Cosmology.cpp -o $@
+
+$(OBJ)/Integral.o: $(SRC)/Integral.cpp $(SRC)/Integral.hpp $(SRC)/Utilities.hpp $(SRC)/Cosmology.hpp
+	$(COMP) -c $(SRC)/Integral.cpp -o $@
+
+$(OBJ)/interpol.o: $(SRC)/interpol.c
+	$(COMP) -c $(SRC)/interpol.c -o $@
 
 $(OBJ)/Utilities.o: $(SRC)/Utilities.cpp
 	$(COMP) -c $(SRC)/Utilities.cpp -o $@
