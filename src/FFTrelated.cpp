@@ -84,8 +84,25 @@ void ZZr2Tranform(double *rOrig, double *fOrig, int NOrig, double r0, double r1,
   plan    = fftw_plan_dft_r2c_1d(N, fftwIn, fftwOut, FFTW_ESTIMATE);
   // Sample function on FFTW sampling points n:
   MapRadial2fftwIn(fftwIn, N, rOrig, fOrig, NOrig, r0, r1, rStart, rEnd);
+
+  // debug:
+  int i;
+  printf("fftwIn:\n");
+  for(i=0; i<N; i++) printf("%g ",fftwIn[i]);
+  printf("\n");
+
   // Do the Fast Fourier Transform:
   fftw_execute(plan);
+
+  // debug: 
+  printf("fftwOut[Re]:\n");
+  for(i=0; i<N/2+1; i++) printf("%g ",fftwOut[i][0]);
+  printf("\n");
+  printf("fftwOut[Im]:\n");
+  for(i=0; i<N/2+1; i++) printf("%g ",fftwOut[i][1]);
+  printf("\n");
+
+
 
   // Go 
   ZZconst = DeltaU(rStart,rEnd,N)/twopi;
