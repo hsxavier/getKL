@@ -1,5 +1,5 @@
 #include "definitions.h"
-#include "ParameterList.hpp"
+
 
 // Prints one single map to FITS and/or TGA file.
 void WriteMap(const Healpix_Map<MAP_PRECISION> & map, std::string filename, bool inform) {

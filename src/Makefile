@@ -83,7 +83,7 @@ $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Ut
 
 $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC)/fitsfunctions.hpp \
 		$(SRC)/CovMatrix.hpp $(SRC)/definitions.h $(SRC)/HealpixMapProcess.hpp $(SRC)/Cosmology.hpp \
-		$(SRC)/FFTrelated.hpp
+		$(SRC)/FFTrelated.hpp $(SRC)/output.hpp
 	$(COMP) -c $(VCONTROL) $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
 $(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp

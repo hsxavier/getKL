@@ -23,6 +23,9 @@
 #include "HealpixMapProcess.hpp"
 #include "Cosmology.hpp"
 #include "FFTrelated.hpp"
+#include "output.hpp"
+
+
 
 /*********************************************************************************/
 /***                                 Main code                                 ***/
@@ -76,7 +79,7 @@ int main(int argc, char *argv[]) {
   /*** Part 1: Load and process selection function data ***/
   /********************************************************/
   
-  // Load redshift distribution and compute average galaxy density:
+  // Load redshift distribution:
   Announce("Loading redshift distribution...");
   double *rDist, *GalDens;
   LoadVecs(wrapper, config.reads("Z_DIST"), &k, &i);
@@ -85,36 +88,39 @@ int main(int argc, char *argv[]) {
   GalDens = wrapper[1];
   Announce();
 
-  Announce("Computing trafo...");
-  std::vector< std::complex <double> > test;
-  double xmin, xmax;
-  m=32;
-  xmin=1150;
-  xmax=1750;
-  ZZr2Tranform(rDist, GalDens, k, xmin, xmax, m, test);
-  Announce();
-  for (i=0; i<m; i++) {
-    cout << q2w(i-m/2-(m%2-1), IntervalU(xmin,xmax)) << " " << test[i] << endl;
-  }
-  return 0;
-  
+  // Compute density, output result and/or exit if requested: 
   Announce("Converting to galaxy density in gals/(h^-1 Mpc)^3...");
   SphDens2CartDens(cosmo, rDist, GalDens, k);
   Announce();
-  // Output density if requested:
-  if (config.reads("GALDENS_OUT")!="0") {
-    str1 = config.reads("GALDENS_OUT");
-    Announce("Writing GALDENS_OUT to "+str1+"...");
-    outfile.open(str1.c_str());
-    if (!outfile.is_open()) error("getKL: cannot open file "+str1);
-    PrintVecs(wrapper, k, 2, &outfile);
-    outfile.close();
-    Announce();
+  OutputTable(config, "GALDENS_OUT", wrapper, k, 2);
+  if (ExitAt=="GALDENS_OUT") { PrepareEnd(StartAll); return 0; }
+  
+  // Compute noise term, output result and/or exit if requested: 
+  Announce("Compute radial noise term 1/n(r)...");
+  for(i=0; i<k; i++) {
+    if (GalDens[i]<0) warning("getKL: Found negative galaxy density.");
+    if (GalDens[i]>0) GalDens[i] = 1.0/GalDens[i];
   }
-  // Exit if this is the last output requested:
-  if (ExitAt=="GALDENS_OUT") {
-    PrepareEnd(StartAll); return 0;
+  Announce();
+  OutputTable(config, "RADNOISE_OUT", wrapper, k, 2);
+  if (ExitAt=="RADNOISE_OUT") { PrepareEnd(StartAll); return 0; }
+
+
+  std::vector< std::complex <double> > test;
+  double rStart, rEnd, rWin0, rWin1;
+  m=config.readi("NRADIAL");
+  rStart = ComDist(cosmo, config.readd("TRAFO_ZRANGE",0));
+  rEnd   = ComDist(cosmo, config.readd("TRAFO_ZRANGE",1));
+  rWin0  = ComDist(cosmo, config.readd(  "SEL_ZRANGE",0));
+  rWin1  = ComDist(cosmo, config.readd(  "SEL_ZRANGE",1));
+  cout << "Trafo from "<<rStart<<" to "<<rEnd<<", with non-zero values at "<<rWin0<< " < r < "<<rWin1<<" h^-1 Mpc." << endl;
+  Announce("Computing trafo...");
+  ZZr2Tranform(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, m, test);
+  Announce();
+  for (i=0; i<m; i++) {
+    cout << q2w(i-m/2-(m%2-1),IntervalU(rStart,rEnd)) << " " << test[i].real() << " " << test[i].imag() << endl;
   }
+  return 0;
   
 
   // Read in completeness map and compute density contrast noise map:
@@ -135,7 +141,6 @@ int main(int argc, char *argv[]) {
     write_Healpix_map_to_fits("!"+str1, NoiseMap, planckType<MAP_PRECISION>());
     Announce();
   }
-
 
   // Get harmonic coefficients from noise map:
   arr<double> RingWeights(2*Nside);
