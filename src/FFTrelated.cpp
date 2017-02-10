@@ -41,6 +41,7 @@ double q2w(int q, double U) {
 // Compute an array of values of the tabulated function fOrig(rOrig) for the sampling points n:
 void MapRadial2fftwIn(double *fftwIn, int N, double *rOrig, double *fOrig, int NOrig, double r0, double r1, 
 		      double rStart, double rEnd) {
+  const double rEPS = 1e-8;
   int n;
   double uStart, du, r;
   uStart = log(rStart);
@@ -51,8 +52,8 @@ void MapRadial2fftwIn(double *fftwIn, int N, double *rOrig, double *fOrig, int N
   
   for (n=0; n<N; n++) {
     r = n2r(n,uStart,du);
-    if (r<r0 || r>r1) fftwIn[n] = 0.0;                  // Apply radial window to f(r).
-    else fftwIn[n] = Interpol(rOrig, NOrig, fOrig, r);  // Interpolate f(r) to sampled value.
+    if (r<r0*(1.0-rEPS) || r>r1*(1.0+rEPS)) fftwIn[n] = 0.0; // Apply radial window to f(r).
+    else fftwIn[n] = Interpol(rOrig, NOrig, fOrig, r);                 // Interpolate f(r) to sampled value.
   }
 }
 
