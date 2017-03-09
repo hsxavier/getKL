@@ -16,20 +16,21 @@ private:
   gsl_matrix_complex *gslCovMatrix, *gslEigenvectors;
   gsl_eigen_hermv_workspace *gslWorkspace;
   gsl_vector *gslEigenvalues;
-  int Lmax;
-  int Nent;
+  int Lmax, Qmax;
+  int Nang, Nent;
 public:
   CovMatrix();
   // Set sizes and allocate memory:
   void Alloc(int lmax);
+  void Alloc(int qmax, int lmax);
   // Returns the size N of the matrix NxN:
   int Nentries() const;
   // Used to return values from entries in the matrix:
   std::complex<double> operator()(int i, int j) const;
-  std::complex<double> operator()(int W, int L, int M, int w, int l, int m) const;
+  std::complex<double> operator()(int Q, int L, int M, int q, int l, int m) const;
   // Used to assign values to entries in the matrix:
   void set(int i, int j, const std::complex<double> & val);
-  void set(int W, int L, int M, int w, int l, int m, const std::complex<double> & val);
+  void set(int Q, int L, int M, int q, int l, int m, const std::complex<double> & val);
   // Obtains the eigenvalues and eigenvectors:
   void EigenSolve();
   // Returns eigenvalues to a std::vector:
@@ -39,8 +40,8 @@ public:
   // Deallocate memory:
   void ClearAll();
   // Translate sub-indices (w,l,m) into a single covariance matrix index i:
-  int  wlm2i(int  w, int  l, int  m) const;
-  void i2wlm(int i, int *w, int *l, int *m) const;
+  int  qlm2i(int  q, int  l, int  m) const;
+  void i2qlm(int i, int *q, int *l, int *m) const;
   // Print data to file:
   void Print(std::string fileprefix, DataOut data);
 };

@@ -18,8 +18,10 @@ CovMatrix::CovMatrix() {
   gslEigenvectors=NULL;
   gslEigenvalues=NULL;
   gslWorkspace=NULL;
-  Lmax=-1;
-  Nent=0;
+  Lmax = -1;
+  Qmax = -1;
+  Nang =  0;
+  Nent =  0;
 }
 
 
@@ -35,7 +37,7 @@ void CovMatrix::ClearAll() {
 }
 
 
-// Set matrix from sub-indices ranges:
+// Set matrix from sub-indices ranges, using only spherical harmonic part:
 void CovMatrix::Alloc(int lmax) {
   // Check if object was already set, and if so, clear memory first:
   if(allocQ) {
@@ -43,7 +45,7 @@ void CovMatrix::Alloc(int lmax) {
     ClearAll();
   }
   // Allocate memory and set covariance matrix information:
-  Lmax     = lmax;
+  Lmax = lmax;
   Nent = (Lmax+1)*(Lmax+1); // m goes from -l to l.
   gslCovMatrix    = gsl_matrix_complex_alloc(Nent, Nent); 
   gslEigenvectors = gsl_matrix_complex_alloc(Nent, Nent); 
@@ -52,24 +54,53 @@ void CovMatrix::Alloc(int lmax) {
 }
 
 
+// Set matrix from sub-indices ranges:
+void CovMatrix::Alloc(int qmax, int lmax) {
+  // Check if object was already set, and if so, clear memory first:
+  if(allocQ) {
+    warning("CovMatrix::Alloc: Reseting previously set matrix.");
+    ClearAll();
+  }
+  // Allocate memory and set covariance matrix information:
+  Lmax = lmax;
+  Nang = (Lmax+1)*(Lmax+1);
+  Qmax = qmax;
+  Nent = (2*Qmax+1)*Nang; // Nq=(2Qmax+1) blocks for which m goes from -l to l.
+  gslCovMatrix    = gsl_matrix_complex_alloc(Nent, Nent); 
+  gslEigenvectors = gsl_matrix_complex_alloc(Nent, Nent); 
+  gslWorkspace    = gsl_eigen_hermv_alloc(Nent);
+  gslEigenvalues  = gsl_vector_alloc(Nent);
+}
+
+
+
 
 /**************************************/
 /*** Internal referencing functions ***/
 /**************************************/
 
 
-// Translate three sub-indexes (w,l,m) into a single one:
-int CovMatrix::wlm2i(int w, int l, int m) const {
-  // Attention: for now we are only using indexes l,m.
-  return l*(l+1)+m;
+// Translate three sub-indexes (q,l,m) into a single one:
+int CovMatrix::qlm2i(int q, int l, int m) const {
+  if (q < -Qmax) warning("qlm2i: q < -Qmax");
+  if (q >  Qmax) warning("qlm2i: q > Qmax");
+  if (l <  0   ) warning("qlm2i: l < 0");
+  if (l >  Lmax) warning("qlm2i: l > Lmax");
+  if (m < -l   ) warning("qlm2i: m < -l");
+  if (m >  l   ) warning("qlm2i: m > l");
+  return (q+Qmax)*Nang + l*(l+1)+m;
 }
 
 
-// Translate a single index into three sub-indexes (w,l,m):
-void CovMatrix::i2wlm(int i, int *w, int *l, int *m) const {
-  // Attention: for now we are only using indexes l,m.
-  (*l) = (int)(sqrt(i));
-  (*m) = i-(*l)*(*l+1);
+// Translate a single index into three sub-indexes (q,l,m):
+void CovMatrix::i2qlm(int i, int *q, int *l, int *m) const {
+  int j;
+  if (i<0)     warning("i2qlm: i < 0");
+  if (i>=Nent) warning("i2qlm: i > # of entries");
+  *q = i/Nang - Qmax;
+  j  = i%Nang;
+  (*l) = (int)(sqrt(j));
+  (*m) = j-(*l)*(*l+1);
 }
 
 
@@ -101,8 +132,8 @@ std::complex<double> CovMatrix::operator()(int i, int j) const {
 }
 
 
-std::complex<double> CovMatrix::operator()(int W, int L, int M, int w, int l, int m) const {
-  return operator() ( wlm2i(W,L,M), wlm2i(w,l,m) );
+std::complex<double> CovMatrix::operator()(int Q, int L, int M, int q, int l, int m) const {
+  return operator() ( qlm2i(Q,L,M), qlm2i(q,l,m) );
 }
 
 // Used to assign values to entries in the matrix:
@@ -112,8 +143,8 @@ void CovMatrix::set(int i, int j, const std::complex<double> & val) {
   gsl_matrix_complex_set(gslCovMatrix, i, j, z);
 }
 
-void CovMatrix::set(int W, int L, int M, int w, int l, int m, const std::complex<double> & val) {
-  set( wlm2i(W,L,M), wlm2i(w,l,m), val );
+void CovMatrix::set(int Q, int L, int M, int q, int l, int m, const std::complex<double> & val) {
+  set( qlm2i(Q,L,M), qlm2i(q,l,m), val );
 } 
 
 

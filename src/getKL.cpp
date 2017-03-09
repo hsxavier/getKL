@@ -8,6 +8,7 @@
 */
 
 #include <iostream>
+#include <iomanip>               // For std::setprecision.
 #include <alm.h>
 #include <healpix_map.h>
 #include <healpix_map_fitsio.h>
@@ -42,11 +43,11 @@ int main(int argc, char *argv[]) {
   Healpix_Map<MAP_PRECISION> NoiseMap;
   Alm<xcomplex <ALM_PRECISION> > Nlm;
   CovMatrix noise;
-  int Nside, Scheme, lmax, CovN;
+  int Nside, Scheme, qmax, lmax, CovN, Nfft;
   // Generic variables and iterators:
   std::string ExitAt, str1;
   std::ofstream outfile;
-  int i, j, k, l, m, L, M, ll, mm;
+  int i, j, k, q, Q, l, m, L, M, ll, mm;
   double *wrapper[2];
   std::complex<double> z, z2;
   long long1, long2;
@@ -78,9 +79,13 @@ int main(int argc, char *argv[]) {
   /********************************************************/
   /*** Part 1: Load and process selection function data ***/
   /********************************************************/
-  
+
+
+  /*** Part 1.1: Prepare radial data ***/
+  cout << "** Prepare radial data:"<<endl;
+
   // Load redshift distribution:
-  Announce("Loading redshift distribution...");
+  Announce("   Loading redshift distribution...");
   double *rDist, *GalDens;
   LoadVecs(wrapper, config.reads("Z_DIST"), &k, &i);
   if (i!=2) warning("gelKL: Expecting two columns, found a different number.");
@@ -89,14 +94,14 @@ int main(int argc, char *argv[]) {
   Announce();
 
   // Compute density, output result and/or exit if requested: 
-  Announce("Converting to galaxy density in gals/(h^-1 Mpc)^3...");
+  Announce("   Converting to galaxy density in gals/(h^-1 Mpc)^3...");
   SphDens2CartDens(cosmo, rDist, GalDens, k);
   Announce();
   OutputTable(config, "GALDENS_OUT", wrapper, k, 2);
   if (ExitAt=="GALDENS_OUT") { PrepareEnd(StartAll); return 0; }
   
   // Compute noise term, output result and/or exit if requested: 
-  Announce("Compute radial noise term 1/n(r)...");
+  Announce("   Compute radial noise term 1/n(r)...");
   for(i=0; i<k; i++) {
     if (GalDens[i]<0) warning("getKL: Found negative galaxy density.");
     if (GalDens[i]>0) GalDens[i] = 1.0/GalDens[i];
@@ -105,47 +110,59 @@ int main(int argc, char *argv[]) {
   OutputTable(config, "RADNOISE_OUT", wrapper, k, 2);
   if (ExitAt=="RADNOISE_OUT") { PrepareEnd(StartAll); return 0; }
 
-
+  // Compute logarithmic wave transform of radial part of the noise:
   std::vector< std::complex <double> > test;
   double rStart, rEnd, rWin0, rWin1;
-  m=config.readi("NRADIAL");
+  qmax   = config.readi("QMAX"); // This is max. q for the radial modes.
+  Nfft   = 4*qmax;
   rStart = ComDist(cosmo, config.readd("TRAFO_ZRANGE",0));
   rEnd   = ComDist(cosmo, config.readd("TRAFO_ZRANGE",1));
   rWin0  = ComDist(cosmo, config.readd(  "SEL_ZRANGE",0));
   rWin1  = ComDist(cosmo, config.readd(  "SEL_ZRANGE",1));
-  cout << "Trafo from "<<rStart<<" to "<<rEnd<<", with non-zero values at "<<rWin0<< " < r < "<<rWin1<<" h^-1 Mpc." << endl;
-  Announce("Computing trafo...");
-  ZZr2Tranform(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, m, test);
+
+  cout << "   Trafo from "<<rStart<<" to "<<rEnd<<", with non-zero values at "<<rWin0<< " < r < "<<rWin1<<" h^-1 Mpc."<<endl;
+  cout << "   Will compute covariance for "<<2*qmax+1<<" radial modes."<<endl;
+  Announce("   Computing trafo...");
+  ZZr2Tranform(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, Nfft, test);
   Announce();
-  for (i=0; i<m; i++) {
-    cout << q2w(i-m/2-(m%2-1),IntervalU(rStart,rEnd)) << " " << test[i].real() << " " << test[i].imag() << endl;
+  // Output result if requested:
+  if (config.reads("ZZR2_OUT")!="0") {
+    str1 = config.reads("ZZR2_OUT");
+    Announce(">> Writing ZZR2_OUT to "+str1+"...");
+    PrintZZr2(str1, rStart, rEnd, Nfft, test);
+    Announce();
   }
-  return 0;
-  
+  if (ExitAt=="ZZR2_OUT") { PrepareEnd(StartAll); return 0; }
+
+
+  /*** Part 1.2: Prepare angular data ***/
+  cout << "** Prepare angular data:"<<endl;
 
   // Read in completeness map and compute density contrast noise map:
-  Announce("Loading completeness map...");
+  Announce("   Loading completeness map...");
   read_Healpix_map_from_fits(config.reads("COMPLETE_MAP"), NoiseMap);
   Nside  = NoiseMap.Nside();
   Scheme = NoiseMap.Scheme();
   if (Scheme !=RING) warning("Expecting map in the RING ordering scheme.");
   Announce();
-  cout << "COMPLETE_MAP has Nside = "<<Nside<<".\n";
-  Announce("Computing density contrast noise map...");
+  cout << "   COMPLETE_MAP has Nside = "<<Nside<<".\n";
+  Announce("   Computing density contrast noise map...");
   Completeness2NoiseMap(NoiseMap);
   Announce();
   // Output noise map if requested:
   if (config.reads("NOISEMAP_OUT")!="0") {
     str1 = config.reads("NOISEMAP_OUT");
-    Announce("Writing NOISEMAP_OUT to "+str1);
+    Announce(">> Writing NOISEMAP_OUT to "+str1);
     write_Healpix_map_to_fits("!"+str1, NoiseMap, planckType<MAP_PRECISION>());
     Announce();
   }
+  if (ExitAt=="NOISEMAP_OUT") { PrepareEnd(StartAll); return 0; }
+
 
   // Get harmonic coefficients from noise map:
   arr<double> RingWeights(2*Nside);
   PrepRingWeights(1, RingWeights, Nside);
-  Announce("Get harmonic coefficients from noise map...");
+  Announce("   Get harmonic coefficients from noise map...");
   Nlm.Set(2*lmax,2*lmax); // Noise cov. matrix depends on integral of 3 Ylm up to Nlm with l=2*LMAX.
   for(l=0; l<=2*lmax; l++) for (m=0; m<=l; m++) { Nlm(l,m).real(0); Nlm(l,m).imag(0); }
   map2alm(NoiseMap, Nlm, RingWeights);
@@ -156,25 +173,35 @@ int main(int argc, char *argv[]) {
   /*** Part 2: Compute noise covariance matrix ***/
   /***********************************************/
 
+
   /*** Part 2.1: Compute angular part of the noise covariance matrix ***/
+  cout << "** Prepare covariance matrix:"<<endl;
 
   // Prepare Covariance matrix object:
-  Announce("Allocating memory for covariance matrix...");
-  noise.Alloc(lmax);
+  Announce("   Allocating memory for covariance matrix...");
+  noise.Alloc(qmax,lmax);
   CovN = noise.Nentries();
   Announce();
-  cout << "Cov. matrix side is N="<<CovN<<endl;
+  cout << "   Cov. matrix side is N="<<CovN<<endl;
+  
+  // DEBUG: print index asignment for covariance matrix:
+  //printf("%6s %6s %6s %6s %6s\n", "i", "w", "l", "m", "i");
+  //for (i=0; i<CovN; i++) {
+  //  noise.i2qlm(i,&k,&l,&m);
+  //  printf("%6d %6d %6d %6d %6d\n", i, k, l, m, noise.qlm2i(k,l,m));
+  //}
+  //return 0;
 
   // Compute the noise angular covariance matrix: 
-  Announce("Computing diag. and lower triangular of cov. matrix...");
+  Announce("   Computing diag. and lower triangular of cov. matrix...");
   long2=(((long)CovN+1)*((long)CovN))/2;
   // LOOP over Cov. Matrix elements:
-#pragma omp parallel for schedule(dynamic) private(i,j,k,L,M,l,m,z,ll,z2)
+#pragma omp parallel for schedule(dynamic) private(i,j,Q,L,M,q,l,m,z,ll,z2)
   for (long1=0; long1<long2; long1++) {
     i = (int)((sqrt(8*long1+1)-1.0)/2.0);
     j = (int)(long1-(i*(i+1))/2);
-    noise.i2wlm(i,&k,&l,&m);
-    noise.i2wlm(j,&k,&L,&M);
+    noise.i2qlm(i,&q,&l,&m);
+    noise.i2qlm(j,&Q,&L,&M);
     // Compute the element given by a sum over Nlm:
     z.real(0); z.imag(0);
     for (ll=FirstEll(L,l,M,m); ll<=L+l; ll=ll+2) {
@@ -182,6 +209,9 @@ int main(int argc, char *argv[]) {
       else     z2 = Nlm(ll,m-M);
       z += z2 * ThreeYlmIntegral(ll, m-M, L, M, l, m);
     }
+    // Multiply the angular part by the radial part:
+    // ATTENTION: We are computing the same angular part many times over, this is VERY inneficient!!
+    z *= test[qq2i(Q-q, Nfft)]; 
     // Save element to the matrix:
     noise.set(i,j,z);
   }
