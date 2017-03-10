@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
   time_t StartAll;                                      // For timing the code run.
   Healpix_Map<MAP_PRECISION> NoiseMap;
   Alm<xcomplex <ALM_PRECISION> > Nlm;
-  CovMatrix noise;
-  int Nside, Scheme, qmax, lmax, CovN, Nfft;
+  CovMatrix noise, angular;
+  int Nside, Scheme, qmax, lmax, CovN, AngN, Nfft;
   // Generic variables and iterators:
   std::string ExitAt, str1;
   std::ofstream outfile;
@@ -175,15 +175,15 @@ int main(int argc, char *argv[]) {
 
 
   /*** Part 2.1: Compute angular part of the noise covariance matrix ***/
-  cout << "** Prepare covariance matrix:"<<endl;
+  cout << "** Prepare NOISE covariance matrix:"<<endl;
 
   // Prepare Covariance matrix object:
-  Announce("   Allocating memory for covariance matrix...");
+  Announce("   Allocating memory for matrix...");
+  angular.Alloc(lmax);
   noise.Alloc(qmax,lmax);
   CovN = noise.Nentries();
+  AngN = angular.Nentries();
   Announce();
-  cout << "   Cov. matrix side is N="<<CovN<<endl;
-  
   // DEBUG: print index asignment for covariance matrix:
   //printf("%6s %6s %6s %6s %6s\n", "i", "w", "l", "m", "i");
   //for (i=0; i<CovN; i++) {
@@ -193,7 +193,31 @@ int main(int argc, char *argv[]) {
   //return 0;
 
   // Compute the noise angular covariance matrix: 
-  Announce("   Computing diag. and lower triangular of cov. matrix...");
+  cout <<  "   Angular Cov. matrix is N="<<AngN<<endl;  
+  Announce("   Computing diag. and below of ang. cov. matrix...");
+  long2=(((long)AngN+1)*((long)AngN))/2;
+  // LOOP over Cov. Matrix elements:
+#pragma omp parallel for schedule(dynamic) private(i,j,Q,L,M,q,l,m,z,ll,z2)
+  for (long1=0; long1<long2; long1++) {
+    i = (int)((sqrt(8*long1+1)-1.0)/2.0);
+    j = (int)(long1-(i*(i+1))/2);
+    angular.i2qlm(i,&q,&l,&m);
+    angular.i2qlm(j,&Q,&L,&M);
+    // Compute the element given by a sum over Nlm:
+    z.real(0); z.imag(0);
+    for (ll=FirstEll(L,l,M,m); ll<=L+l; ll=ll+2) {
+      if (M>m) z2 = MinusOneToPower(M-m) * conj(Nlm(ll,M-m));
+      else     z2 = Nlm(ll,m-M);
+      z += z2 * ThreeYlmIntegral(ll, m-M, L, M, l, m);
+    }
+    // Save element to the matrix:
+    angular.set(i,j,z);
+  }
+  Announce();
+
+  // Compute the noise angular covariance matrix: 
+  cout <<  "   Cov. matrix side is N="<<CovN<<endl;
+  Announce("   Computing diag. and below of full cov. matrix...");
   long2=(((long)CovN+1)*((long)CovN))/2;
   // LOOP over Cov. Matrix elements:
 #pragma omp parallel for schedule(dynamic) private(i,j,Q,L,M,q,l,m,z,ll,z2)
@@ -202,16 +226,8 @@ int main(int argc, char *argv[]) {
     j = (int)(long1-(i*(i+1))/2);
     noise.i2qlm(i,&q,&l,&m);
     noise.i2qlm(j,&Q,&L,&M);
-    // Compute the element given by a sum over Nlm:
-    z.real(0); z.imag(0);
-    for (ll=FirstEll(L,l,M,m); ll<=L+l; ll=ll+2) {
-      if (M>m) z2 = MinusOneToPower(M-m) * conj(Nlm(ll,M-m));
-      else     z2 = Nlm(ll,m-M);
-      z += z2 * ThreeYlmIntegral(ll, m-M, L, M, l, m);
-    }
     // Multiply the angular part by the radial part:
-    // ATTENTION: We are computing the same angular part many times over, this is VERY inneficient!!
-    z *= test[qq2i(Q-q, Nfft)]; 
+    z = angular(0,l,m,0,L,M) * test[qq2i(Q-q, Nfft)]; 
     // Save element to the matrix:
     noise.set(i,j,z);
   }

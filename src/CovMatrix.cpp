@@ -37,23 +37,6 @@ void CovMatrix::ClearAll() {
 }
 
 
-// Set matrix from sub-indices ranges, using only spherical harmonic part:
-void CovMatrix::Alloc(int lmax) {
-  // Check if object was already set, and if so, clear memory first:
-  if(allocQ) {
-    warning("CovMatrix::Alloc: Reseting previously set matrix.");
-    ClearAll();
-  }
-  // Allocate memory and set covariance matrix information:
-  Lmax = lmax;
-  Nent = (Lmax+1)*(Lmax+1); // m goes from -l to l.
-  gslCovMatrix    = gsl_matrix_complex_alloc(Nent, Nent); 
-  gslEigenvectors = gsl_matrix_complex_alloc(Nent, Nent); 
-  gslWorkspace    = gsl_eigen_hermv_alloc(Nent);
-  gslEigenvalues  = gsl_vector_alloc(Nent);
-}
-
-
 // Set matrix from sub-indices ranges:
 void CovMatrix::Alloc(int qmax, int lmax) {
   // Check if object was already set, and if so, clear memory first:
@@ -72,6 +55,11 @@ void CovMatrix::Alloc(int qmax, int lmax) {
   gslEigenvalues  = gsl_vector_alloc(Nent);
 }
 
+
+// Set matrix from sub-indices ranges, using only spherical harmonic part:
+void CovMatrix::Alloc(int lmax) {
+  Alloc(0, lmax);
+}
 
 
 
