@@ -227,7 +227,10 @@ int main(int argc, char *argv[]) {
     noise.i2qlm(i,&q,&l,&m);
     noise.i2qlm(j,&Q,&L,&M);
     // Multiply the angular part by the radial part:
-    z = angular(0,l,m,0,L,M) * test[qq2i(Q-q, Nfft)]; 
+    if (angular.qlm2i(0,l,m)>angular.qlm2i(0,L,M))
+      z = angular(0,l,m,0,L,M) * test[qq2i(Q-q, Nfft)];
+    else 
+      z = conj(angular(0,L,M,0,l,m)) * test[qq2i(Q-q, Nfft)];
     // Save element to the matrix:
     noise.set(i,j,z);
   }
