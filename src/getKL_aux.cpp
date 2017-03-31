@@ -2,6 +2,17 @@
 #include <cmath>
 #include <stdlib.h>              // For abs for int.
 #include "Utilities.hpp"
+#include <complex>
+#include <complex.h>
+
+
+// Returns the conjugate of the radial part of Zwlm: 
+std::complex<double> ZetawConj(double w, double r) {
+  const double sqrt2pi = 2.506628274631;
+  std::complex<double> z;
+  z.real(1.5);  z.imag(w);
+  return exp(z*log(r))/sqrt2pi;
+}
 
 
 // Returns (-1)^m:

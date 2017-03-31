@@ -1,6 +1,11 @@
 #ifndef GETKL_AUX
 #define GETKL_AUX 1
 
+#include <complex>
+
+// Returns the conjugate of the radial part of Zwlm: 
+std::complex<double> ZetawConj(double w, double r);
+
 // Returns (-1)^m:
 double MinusOneToPower(int m);
 
