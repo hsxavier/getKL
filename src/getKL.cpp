@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
 
 
   /*** Part 1.3: Compute i_wlm i*_LWM, the constant term of cov. matrix if the mean is not subtracted ***/
-
+  
   // Create binary angular mask:
   Announce("   Creating binary angular mask...");
   NoiseMap2BinaryMask(NoiseMap);
@@ -197,7 +197,10 @@ int main(int argc, char *argv[]) {
   // Deallocate memory that will not be used anymore:
   NoiseMap.SetNside(1, RING);
   Announce();
-  
+  WriteAlm(Wlm, config, "MASK_ALM_OUT", 1);
+  if (ExitAt=="MASK_ALM_OUT") { PrepareEnd(StartAll); return 0; }
+
+  /*
   // Compute radial transform:
   std::vector< std::complex<double> > intZr2;
   double U;
@@ -234,7 +237,7 @@ int main(int argc, char *argv[]) {
   if (ExitAt=="COVCONST_OUT") {
     PrepareEnd(StartAll); return 0;
   }
-  
+  */
 
 
   /***********************************************/

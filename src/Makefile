@@ -73,10 +73,11 @@ clean:
 
 $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o \
 		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
-		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o $(OBJ)/output.o
 	$(COMP) $(LDHEAL) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
 			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
-		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o -o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS)
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o $(OBJ)/output.o \
+		-o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS)
 
 
 # Objects:
@@ -116,3 +117,6 @@ $(OBJ)/fitsfunctions.o: $(SRC)/fitsfunctions.cpp $(SRC)/Utilities.hpp
 
 $(OBJ)/ParameterList.o: $(SRC)/ParameterList.cpp $(SRC)/ParameterList.hpp $(SRC)/Utilities.hpp
 	$(COMP) -c $(SRC)/ParameterList.cpp -o $@
+
+$(OBJ)/output.o: $(SRC)/output.cpp
+	$(COMP) $(CXXHEAL) -c $(SRC)/output.cpp -o $@

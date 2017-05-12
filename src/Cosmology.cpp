@@ -172,9 +172,10 @@ double ProjDensity(double z0, double zmin, double zmax, const Cosmology & p) {
 // The domain is also converted from redshift to distance:
 void SphDens2CartDens(const Cosmology & p, double *x, double *ngals, int Nentries) {
   int i;
-  
+  double Arcmin2toSterrad = (180*60/M_PI)*(180*60/M_PI);
+
   for (i=0; i<Nentries; i++) { 
-    ngals[i] = ngals[i] / pow(ComDist(p,x[i]),2) / dChidz(p,x[i]);
+    ngals[i] = ngals[i] * Arcmin2toSterrad / pow(ComDist(p,x[i]),2) / dChidz(p,x[i]);
     x[i]     = ComDist(p,x[i]);
   }
 }

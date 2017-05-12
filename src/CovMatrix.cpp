@@ -39,6 +39,8 @@ void CovMatrix::ClearAll() {
 
 // Set matrix from sub-indices ranges:
 void CovMatrix::Alloc(int qmax, int lmax) {
+  int i, j;
+  gsl_complex z;
   // Check if object was already set, and if so, clear memory first:
   if(allocQ) {
     warning("CovMatrix::Alloc: Reseting previously set matrix.");
@@ -53,6 +55,12 @@ void CovMatrix::Alloc(int qmax, int lmax) {
   gslEigenvectors = gsl_matrix_complex_alloc(Nent, Nent); 
   gslWorkspace    = gsl_eigen_hermv_alloc(Nent);
   gslEigenvalues  = gsl_vector_alloc(Nent);
+  
+  // Initialize entries to zero:
+  GSL_SET_COMPLEX(&z, 0, 0);
+  for (i=0; i<Nent; i++) 
+    for (j=0; j<Nent; j++)
+      gsl_matrix_complex_set(gslCovMatrix, i, j, z);
 }
 
 

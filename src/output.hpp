@@ -3,6 +3,7 @@
 
 #include "ParameterList.hpp"
 #include "Utilities.hpp"
+#include <alm.h>
 
 // Print Table to file according to configuration file keyword:
 template <typename type, typename intT>
@@ -23,3 +24,7 @@ void OutputTable(const ParameterList & config, std::string keyword, type **table
 }
 
 #endif
+
+
+// Prints one single alm table to a TEXT file.
+void WriteAlm(const Alm<xcomplex <ALM_PRECISION> > & a, const ParameterList & config, std::string keyword, bool inform);
