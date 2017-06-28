@@ -73,10 +73,10 @@ clean:
 
 $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o \
 		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
-		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o $(OBJ)/output.o
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/radialTrafos.o $(OBJ)/output.o
 	$(COMP) $(LDHEAL) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
 			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
-		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/FFTrelated.o $(OBJ)/output.o \
+		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/radialTrafos.o $(OBJ)/output.o \
 		-o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS)
 
 
@@ -84,14 +84,14 @@ $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Ut
 
 $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC)/fitsfunctions.hpp \
 		$(SRC)/CovMatrix.hpp $(SRC)/definitions.h $(SRC)/HealpixMapProcess.hpp $(SRC)/Cosmology.hpp \
-		$(SRC)/FFTrelated.hpp $(SRC)/output.hpp
+		$(SRC)/radialTrafos.hpp $(SRC)/output.hpp
 	$(COMP) -c $(VCONTROL) $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
 $(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp
 	$(COMP) -c $(SRC)/getKL_aux.cpp -o $@
 
-$(OBJ)/FFTrelated.o: $(SRC)/FFTrelated.cpp $(SRC)/Utilities.hpp $(SRC)/interpol.h
-	$(COMP) -c $(SRC)/FFTrelated.cpp -o $@
+$(OBJ)/radialTrafos.o: $(SRC)/radialTrafos.cpp $(SRC)/Utilities.hpp $(SRC)/interpol.h $(SRC)/Integral.hpp
+	$(COMP) -c $(SRC)/radialTrafos.cpp -o $@
 
 $(OBJ)/CovMatrix.o: $(SRC)/CovMatrix.cpp
 	$(COMP) -c $(SRC)/CovMatrix.cpp -o $@

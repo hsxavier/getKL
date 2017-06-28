@@ -5,13 +5,18 @@
 #include <complex>
 #include <vector>
 #include "ParameterList.hpp"
+#include "Integral.hpp"
 
 /*** NOTE: Here, qq = (Q-q) is the difference between two radial mode indices Q and q. ***/
-
 
 // Common constants:
 const double twopi = 6.283185307179586;
 
+
+
+/**********************************/
+/*** General acessory functions ***/
+/**********************************/
 
 // Returns the logarithmic interval between rStart and rEnd:
 double IntervalU(double rStart, double rEnd) {
@@ -53,6 +58,36 @@ int qq2i(int qq, int Nfft) {
 }
 
 
+// Print transform to file:
+void PrintZZr2(std::string filename, double rStart, double rEnd, int Nfft, const std::vector<std::complex<double> > & trafo) {
+  using std::endl;
+  int qq, qqmax;
+  double du;
+  std::ofstream outfile;
+  
+  // Set variables:
+  qqmax = Nfft/2;
+  du    = IntervalU(rStart,rEnd);
+  if (trafo.size() != 2*qqmax+1) warning("PrintZZr2: transform size is not in harmony with FFT vector size.");
+
+  // Open file:
+  outfile.open(filename.c_str());
+  if (!outfile.is_open()) warning("PrintZZr2: cannot open file "+filename);
+  else {
+    // Write trafo table:
+    outfile << "# Q-q, W-w, [Re], [Im]" << endl;  
+    for (qq=-qqmax; qq<=qqmax; qq++) {
+      outfile<< qq <<" "<< q2w(qq,du) <<" "<< trafo[qq2i(qq,Nfft)].real() <<" "<< trafo[qq2i(qq,Nfft)].imag() << endl;
+    }
+    outfile.close();
+  }  
+}
+
+
+/**************************************/
+/*** Functions for the FFT approach ***/
+/**************************************/
+
 // Compute an array of values of the tabulated function fOrig(rOrig) for the sampling points n:
 void MapRadial2fftwIn(double *fftwIn, int N, double *rOrig, double *fOrig, int NOrig, double r0, double r1, 
 		      double rStart, double rEnd) {
@@ -85,9 +120,9 @@ std::complex<double> WwPhase(double rStart, double rEnd, int qq) {
 
 
 // Returns the integral of: f(r) Z_W(r) Z*_w(r) r^2 over r, from rStart to rEnd, but zeroing f(r) outside [r0,r1]:
-// It returns the results for the each W-w.
-void ZZr2Tranform(double *rOrig, double *fOrig, int NOrig, double r0, double r1, 
-		  double rStart, double rEnd, int Nfft, std::vector< std::complex <double> > & result) {
+// It returns the results for the each W-w.    !! USING FFT !!
+void ZZr2TranformFFT(double *rOrig, double *fOrig, int NOrig, double r0, double r1, 
+		     double rStart, double rEnd, int Nfft, std::vector< std::complex <double> > & result) {
   double *fftwIn;
   fftw_plan plan;
   fftw_complex *fftwOut;
@@ -135,54 +170,50 @@ void ZZr2Tranform(double *rOrig, double *fOrig, int NOrig, double r0, double r1,
 
 
 
-// Print transform to file:
-void PrintZZr2(std::string filename, double rStart, double rEnd, int Nfft, const std::vector<std::complex<double> > & trafo) {
-  using std::endl;
-  int qq, qqmax;
-  double du;
-  std::ofstream outfile;
-  
-  // Set variables:
-  qqmax = Nfft/2;
-  du    = IntervalU(rStart,rEnd);
-  if (trafo.size() != 2*qqmax+1) warning("PrintZZr2: transform size is not in harmony with FFT vector size.");
+/*****************************************/
+/*** Functions for the Romberg aproach ***/
+/*****************************************/
 
-  // Open file:
-  outfile.open(filename.c_str());
-  if (!outfile.is_open()) warning("PrintZZr2: cannot open file "+filename);
-  else {
-    // Write trafo table:
-    outfile << "# Q-q, W-w, [Re], [Im]" << endl;  
-    for (qq=-qqmax; qq<=qqmax; qq++) {
-      outfile<< qq <<" "<< q2w(qq,du) <<" "<< trafo[qq2i(qq,Nfft)].real() <<" "<< trafo[qq2i(qq,Nfft)].imag() << endl;
-    }
-    outfile.close();
-  }  
+// Integrand of the radial part of the noise covariance matrix (ZZr2 transform):
+// (it returns either real or imag. part if iPhase=0 or -pi/2, respectively).
+double ZZr2Integrand(double iPhase, double *rArray, double *noiseArray, int Na, double wdiff, double r) {
+  return Interpol(rArray, Na, noiseArray, r) * cos(-wdiff*log(r)+iPhase) / (2*M_PI) / r;
+}
+double ZZr2IntegrandRe(double *rArray, double *noiseArray, int Na, double wdiff, double r) {
+  return ZZr2Integrand(0, rArray, noiseArray, Na, wdiff, r);
+}
+double ZZr2IntegrandIm(double *rArray, double *noiseArray, int Na, double wdiff, double r) {
+  return ZZr2Integrand(-M_PI_2, rArray, noiseArray, Na, wdiff, r);
 }
 
 
-/*********************************/
-/*** Previous codes, commented ***/
-/*********************************/
+// Solve ZZr2 noise integral for a single W-w 'wdiff'.
+// rArray[0...Na-1] and noiseArray[0...Na-1] are tabulated density contrast noise [1/n(r)];
+// The integral is performed from r0 to r1, given by the radial selection function limits.
+void ZZr2Romberg(double *rArray, double *noiseArray, int Na, double wdiff, double r0, double r1, 
+		 double *ResRe, double *ResIm) {
+  *ResRe = qrombTable(ZZr2IntegrandRe, r0, r1, rArray, noiseArray, Na, wdiff); 
+  *ResIm = qrombTable(ZZr2IntegrandIm, r0, r1, rArray, noiseArray, Na, wdiff);
+}
 
 
-/*** From function 'ZZr2Tranform' ***/
+// Returns the integral of: f(r) Z_W(r) Z*_w(r) r^2 over r, from rStart to rEnd, but zeroing f(r) outside [r0,r1]:
+// It returns the results for the each W-w.    !! USING Romberg !!
+void ZZr2TranformRomb(double *rOrig, double *fOrig, int NOrig, double r0, double r1, 
+		      double rStart, double rEnd, int Nfft, std::vector< std::complex <double> > & result) {
+  int qq, qqmax;
+  double du, ResRe, ResIm;
 
-  // debug:
-  //int i;
-  //printf("fftwIn:\n");
-  //for(i=0; i<Nfft; i++) printf("%g ",fftwIn[i]);
-  //printf("\n");
+  qqmax = Nfft/2;                 // Check ZZr2Tranform for more information on this operation.
+  du    = IntervalU(rStart,rEnd);
 
-  // debug: 
-  //printf("fftwOut[Re]:\n");
-  //for(i=0; i<Nfft/2+1; i++) printf("%g ",fftwOut[i][0]);
-  //printf("\n");
-  //printf("fftwOut[Im]:\n");
-  //for(i=0; i<Nfft/2+1; i++) printf("%g ",fftwOut[i][1]);
-  //printf("\n");
+  result.resize(Nfft + 1-Nfft%2); // Check ZZr2Tranform for more information on this operation.
 
-  //qq0   = Nfft/2 + (Nfft%2-1);
-  //result.resize(Nfft);
+  //#pragma omp parallel for private(ResRe, ResIm)
+  for (qq=-qqmax; qq<=qqmax; qq++) {
+    ZZr2Romberg(rOrig, fOrig, NOrig, q2w(qq,du), r0, r1, &ResRe, &ResIm);
+    result[qq2i(qq,Nfft)].real(ResRe);
+    result[qq2i(qq,Nfft)].imag(ResIm);
+  }
 
-  // If Nfft is even, do not store -qmax which is real (this is not true anymore, we are storing it):
+}

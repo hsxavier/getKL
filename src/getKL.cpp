@@ -23,7 +23,7 @@
 #include "definitions.h"
 #include "HealpixMapProcess.hpp"
 #include "Cosmology.hpp"
-#include "FFTrelated.hpp"
+#include "radialTrafos.hpp"
 #include "output.hpp"
 
 
@@ -128,8 +128,18 @@ int main(int argc, char *argv[]) {
 
   cout << "   Trafo from "<<rStart<<" to "<<rEnd<<", with non-zero values at "<<rWin0<< " < r < "<<rWin1<<" h^-1 Mpc."<<endl;
   cout << "   Will compute covariance for "<<2*qmax+1<<" radial modes."<<endl;
-  Announce("   Computing trafo...");
-  ZZr2Tranform(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, Nfft, ZZr2trafo);
+  i = config.readi("ZZR2_METHOD");
+  if (i!=1 && i!=2) { warning("Unknown ZZR2_METHOD, will use method 1."); i=1; }
+  // Use FFT to compute radial noise trafo:
+  if (i==1) {
+    Announce("   Computing trafo with FFTW...");
+    ZZr2TranformFFT(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, Nfft, ZZr2trafo);
+  }
+  // Use Romberg Integration to compute radial noise trafo:
+  if (i==2) {
+    Announce("   Computing trafo with Romberg...");
+    ZZr2TranformRomb(rDist, GalDens, k, rWin0, rWin1, rStart, rEnd, Nfft, ZZr2trafo);
+  }
   Announce();
   // Output result if requested:
   if (config.reads("ZZR2_OUT")!="0") {

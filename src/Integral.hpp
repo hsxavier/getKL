@@ -13,4 +13,9 @@ double trapzd(double (*func)(double, double, param), double a, double b, int n, 
 double qromb(double (*func)(double, double, param), double a, double b, double z0, param p);
 double trapzd5(double (*func)(param, double, double), double a, double b, int n, double z0, param p);
 double qromb5(double (*func)(param, double, double), double a, double b, double z0, param p);
+double trapzdTable(double (*func)(double*, double*, int, double, double), double a, double b, int n, 
+		   double *xa, double *ya, double Na, double z0);
+double qrombTable(double (*func)(double*, double*, int, double, double), double a, double b, 
+		  double *xa, double *ya, int Na, double z0);
+
 #endif

@@ -253,3 +253,58 @@ double qromb5(double (*func)(param, double, double), double a, double b, double 
    
    return 0.0;
 }
+
+
+/*** Function needed by qrombTable ***/
+double trapzdTable(double (*func)(double*, double*, int, double, double), 
+		   double a, double b, int n, double *xa, double *ya, int Na, double z0) {
+   
+   /* Declaração das variáveis */
+   double x,tnm,sum,del;
+   static double s;
+   int it,j;
+   
+   if (n == 1) {
+     return (s=0.5*(b-a)*((*func)(xa,ya,Na,z0,a)+(*func)(xa,ya,Na,z0,b)));
+   }
+   else {
+      for (it=1,j=1;j<n-1;j++) it <<= 1;
+      tnm=it;
+      del=(b-a)/tnm;
+      x=a+0.5*del;
+      for (sum=0.0,j=1;j<=it;j++,x+=del) sum += (*func)(xa,ya,Na,z0,x);
+      s=0.5*(s+(b-a)*sum/tnm);
+      return s;
+   }
+}
+
+
+/*** This is the Romberg Integration method for functions that depend on xa[...] and ya[...] arrays ***/
+/*** and on one extra double apart from the integration variable.                                   ***/
+double qrombTable(double (*func)(double*, double*, int, double, double), double a, double b, double *xa, double *ya, int Na, double z0) {
+  /* Declaração de funçõe utilizadas */
+   void polint(double xa[], double ya[], int n, double x, double *y, double *dy);
+   double trapzdTable(double (*func)(double*, double*, int, double, double), 
+		      double a, double b, int n, double *xa, double *ya, int Na, double z0);
+   /* Declaração das variáveis utilizadas */
+   double ss,dss, EPSqi;
+   double s[JMAXP],h[JMAXP+1];
+   int j, Ki, JMAXi;
+   
+   Ki=K;
+   EPSqi=1.0e-12;
+   JMAXi=JMAX;
+      
+   h[1]=1.0;
+   for (j=1; j<=JMAXi; j++) {
+     s[j]=trapzdTable(func,a,b,j,xa,ya,Na,z0);
+      if (j >= Ki) {
+	 polint(&h[j-Ki],&s[j-Ki],Ki,0.0,&ss,&dss);
+	 if (fabs(dss) <= EPSqi*fabs(ss)) return ss;
+      }
+      h[j+1]=0.25*h[j];
+   }
+   error("Too many steps in routine qrombTable");
+   
+   return 0.0;
+}
