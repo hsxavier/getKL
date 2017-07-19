@@ -26,15 +26,9 @@ namespace ParDef {
   const string typelabel[13] = {"i1", "i2", "i3", "i4", "i5", "d1", "d2", "d3", "d4", "d5", "c", "s", "ph"};
 
   // SET HERE THE PARAMETERS OF THE PROGRAM:
-  const int     npars=21;
-  const string  par_name[npars] = {"EXIT_AT", "OMEGA_m", "OMEGA_L", "W_de","LMAX", "QMAX", "TRAFO_ZRANGE", 
-				   "COMPLETE_MAP", "Z_DIST", "SELEC_SCALE", "SEL_ZRANGE", "GALDENS_OUT", 
-				   "RADNOISE_OUT", "ZZR2_METHOD", "ZZR2_OUT", "NOISEMAP_OUT", "MASK_OUT", 
-				   "MASK_ALM_OUT", "COVCONST_OUT", "ANGCOV_OUT", "COVMATRIX_OUT"};
-  const int     par_type[npars] = {s, d1, d1, d1, i1, i1, d2,
-				   s, s, d1, d2, s, 
-				   s, i1, s, s, s, 
-				   s, s, s, s};
+  const int     npars=4;
+  const string  par_name[npars] = {"LMAX", "ANGULAR_MAP", "ALM_OUT", "ANGCOV_OUT"};
+  const int     par_type[npars] = {i1, s, s, s};
   // END OF PARAMETER SETTINGS.
 }
 
