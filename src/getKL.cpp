@@ -131,6 +131,19 @@ int main(int argc, char *argv[]) {
   }
   Announce();
 
+  // If requested, set remaining elements of cov. matrix as conjugate transpose:
+  // NOTE: we are currently resetting the diagonal. Improve this in the future !!
+  if (config.readi("FULLCOV")==1) {
+    Announce("   Filling upper part of ang. cov. matrix...");
+#pragma omp parallel for schedule(dynamic) private(i,j)
+    for (long1=0; long1<long2; long1++) {
+      i = (int)((sqrt(8*long1+1)-1.0)/2.0);
+      j = (int)(long1-(i*(i+1))/2);
+      angular.set(j,i, conj(angular(i,j)));
+    }
+    Announce();
+  }
+  
   // If requested, print out the covariance matrix:
   str1=config.reads("ANGCOV_OUT");
   if (str1!="0") {
