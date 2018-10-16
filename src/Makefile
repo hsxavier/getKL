@@ -13,6 +13,12 @@ BIN  = ../bin
 OBJ  = ../obj
 SRC  = ../src
 
+# To use wigner 3j symbols from https://github.com/valandil/wignerSymbols:
+WIGNERDIR = /home/skems/prog/wignerSymbols-master
+CXXWIGNER = -I$(WIGNERDIR)/include/wignerSymbols
+LDWIGNER  = -L$(WIGNERDIR)/lib
+LIBWIGNER = -lwignerSymbols
+
 # Healpix location:
 HEALDIR  =  /home/skems/prog/Healpix_3.31
 HEALDATA = $(HEALDIR)/data
@@ -74,10 +80,10 @@ clean:
 $(BIN)/getKL: $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/Utilities.o \
 		$(OBJ)/CovMatrix.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
 		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/radialTrafos.o $(OBJ)/output.o
-	$(COMP) $(LDHEAL) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
+	$(COMP) $(LDHEAL) $(LDWIGNER) $(OBJ)/getKL.o $(OBJ)/getKL_aux.o $(OBJ)/fitsfunctions.o $(OBJ)/CovMatrix.o \
 			$(OBJ)/Utilities.o $(OBJ)/ParameterList.o $(OBJ)/interpol.o $(OBJ)/HealpixMapProcess.o \
 		$(OBJ)/Cosmology.o $(OBJ)/Integral.o $(OBJ)/radialTrafos.o $(OBJ)/output.o \
-		-o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS)
+		-o $@ $(GSLLIBS) $(HEALLIBS) $(FFTWLIBS) $(LIBWIGNER)
 
 
 # Objects:
@@ -88,7 +94,7 @@ $(OBJ)/getKL.o: $(SRC)/getKL.cpp $(SRC)/getKL_aux.hpp $(SRC)/Utilities.hpp $(SRC
 	$(COMP) -c $(VCONTROL) $(CXXHEAL) $(SRC)/getKL.cpp -o $@ $(CXXOMP)
 
 $(OBJ)/getKL_aux.o: $(SRC)/getKL_aux.cpp $(SRC)/Utilities.hpp
-	$(COMP) -c $(SRC)/getKL_aux.cpp -o $@
+	$(COMP) $(CXXWIGNER) -c $(SRC)/getKL_aux.cpp -o $@
 
 $(OBJ)/radialTrafos.o: $(SRC)/radialTrafos.cpp $(SRC)/Utilities.hpp $(SRC)/interpol.h $(SRC)/Integral.hpp
 	$(COMP) -c $(SRC)/radialTrafos.cpp -o $@

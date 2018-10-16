@@ -4,6 +4,7 @@
 #include "Utilities.hpp"
 #include <complex>
 #include <complex.h>
+#include <wignerSymbols-cpp.h>   // To compute wigner 3j symbols with joeydumont's implementation.
 
 
 // Returns the conjugate of the radial part of Zwlm: 
@@ -22,8 +23,8 @@ double MinusOneToPower(int m) {
 }
 
 
-// Returns the integral over all sphere of: Y_l1m1 x Y_l2m2 x Y*_l3m3: 
-double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
+// Returns the integral over all sphere of: Y_l1m1 x Y_l2m2 x Y*_l3m3, using GSL function for Wigner's 3j symbols: 
+double ThreeYlmIntegralGSL(int l1, int m1, int l2, int m2, int l3, int m3) {
   const double FourPi = 12.56637061435917;
   int twol1, twol2, twol3;
   twol1 = 2*l1;
@@ -32,6 +33,22 @@ double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
   return sqrt((double)((twol1+1)*(twol2+1)*(twol3+1))/FourPi) * MinusOneToPower(m3) * 
     gsl_sf_coupling_3j(twol1, twol2, twol3, 2*m1, 2*m2, -2*m3) *
     gsl_sf_coupling_3j(twol1, twol2, twol3,    0,     0,    0);
+}
+
+
+// Returns the integral over all sphere of: Y_l1m1 x Y_l2m2 x Y*_l3m3, using joeydumont (github) implementation: 
+double ThreeYlmIntegralJD(int l1, int m1, int l2, int m2, int l3, int m3) {
+  using namespace WignerSymbols;
+  const double FourPi = 12.56637061435917;
+  return sqrt((double)((2*l1+1)*(2*l2+1)*(2*l3+1))/FourPi) * MinusOneToPower(m3) * 
+    wigner3j(l1,l2,l3,m1,m2,-m3) * wigner3j(l1,l2,l3,0,0,0);
+}
+
+
+// WRAPPER that chooses W3j implementation and returns the integral over all sphere of: Y_l1m1 x Y_l2m2 x Y*_l3m3: 
+double ThreeYlmIntegral(int l1, int m1, int l2, int m2, int l3, int m3) {
+  //return ThreeYlmIntegralGSL(l1, m1, l2, m2, l3, m3);
+  return ThreeYlmIntegralJD(l1, m1, l2, m2, l3, m3);
 }
 
 
