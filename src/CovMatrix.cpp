@@ -2,6 +2,7 @@
 #include "CovMatrix.hpp"
 #include "Utilities.hpp"
 #include <vector>
+#include <iomanip>      // std::setprecision
 
 
 /**********************************************/
@@ -202,6 +203,8 @@ void CovMatrix::Print(std::string fileprefix, DataOut data) {
     else {
       // Write eigenvalues to file:
       if (!eigenQ) warning("CovMatrix::Print: Eigenvalues not computed.");
+      outfile1 << std::scientific;
+      outfile1 << std::setprecision(15);
       for (i=0; i<Nent; i++) outfile1 << gsl_vector_get(gslEigenvalues, i) << endl; 
       outfile1.close();
     }
@@ -225,6 +228,10 @@ void CovMatrix::Print(std::string fileprefix, DataOut data) {
 	if (destroyedQ) warning("CovMatrix::Print: Covariance matrix was destroyed.");
       }
       // Write matrix to files (real and imag parts in different files):
+      outfile1 << std::scientific;
+      outfile1 << std::setprecision(15);
+      outfile2 << std::scientific;
+      outfile2 << std::setprecision(15);
       for (i=0; i<Nent; i++) {
 	for (j=0; j<Nent; j++) {
 	  outfile1 << GSL_REAL(gsl_matrix_complex_get(gslMat, i, j)) << " ";
